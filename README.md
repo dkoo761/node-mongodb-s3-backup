@@ -1,21 +1,60 @@
 # Node MongoDB / S3 Backup
 
+### This is a fork to fix a breaking bug in the original repo
+
+The original repo (https://github.com/theycallmeswift/node-mongodb-s3-backup) is no longer working due to a breaking 
+change in the knox S3 library.
+
+#### CHANGELOG
+
+1. Replaced `knox` with `knox-s3` which is a fork of `knox` that fixes the issue 
+since `knox` itself is no longer maintained.
+
+2. Added some new options to the `mongodb` portion of the JSON config file (see details below).
+
+3. Replaced `tmpDir()` with `tmpdir()` to get rid of a deprecation warning.
+
+4. Changed `stderr` logging to use `[info]` instead of `[error]` since it was marking normal results as errors.
+
+### Original Intro...
+
 This is a package that makes backing up your mongo databases to S3 simple.
 The binary file is a node cronjob that runs at midnight every day and backs up
 the database specified in the config file.
 
 ## Installation
 
-    npm install mongodb_s3_backup -g
+Since this repo is NOT PUBLISHED IN NPM as it is a fork of the original, you can install it by:
+
+1) Downloading this repo
+
+2) `cd /path/to/downloaded/repo`
+
+3) `npm install -g`
 
 ## Configuration
 
 To configure the backup, you need to pass the binary a JSON configuration file.
+
+Note the following new options available under the `mongodb` portion of the JSON config file:
+
+`type` - MUST be either `standalone` or `replicaSet`
+
+`host` - if using type `replicaSet`, include the usual comma-separated list of replica set members with both host and port numbers for each member
+
+`port` - optional. If using type `replicaSet`, you must OMIT this field completely!
+
+`isSSL` - optional. Set to `true` if connecting via SSL (this simply sets the `--ssl` option)
+
+`authenticationDatabase` - optional. Set to the name of your authenticationDatabase if using one.
+
 There is a sample configuration file supplied in the package (`config.sample.json`).
+
 The file should have the following format:
 
     {
       "mongodb": {
+        "type": "standalone",
         "host": "localhost",
         "port": 27017,
         "username": false,

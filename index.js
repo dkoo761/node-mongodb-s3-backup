@@ -89,13 +89,30 @@ function mongoDump(options, directory, callback) {
 
   callback = callback || function() { };
 
-  mongoOptions= [
-    '-h', options.host + ':' + options.port,
+  mongoOptions = [
     '-d', options.db,
-    '-o', directory
+    '-o', directory,
+    '-h'
   ];
 
-  if(options.username && options.password) {
+  if (options.type === 'replicaSet') {
+    mongoOptions.push(options.host); // replica set host will include multiple host:port pairs
+  }
+
+  if (options.type === 'standalone') {
+    mongoOptions.push(options.host + ':' + options.port);
+  }
+
+  if (options.isSSL) {
+    mongoOptions.push('--ssl');
+  }
+
+  if (options.authenticationDatabase) {
+    mongoOptions.push('--authenticationDatabase');
+    mongoOptions.push(options.authenticationDatabase);
+  }
+
+  if (options.username && options.password) {
     mongoOptions.push('-u');
     mongoOptions.push(options.username);
 
@@ -111,7 +128,8 @@ function mongoDump(options, directory, callback) {
   });
 
   mongodump.stderr.on('data', function (data) {
-    log(data, 'error');
+    //log(data, 'error');
+    log(data); // for some reason it is logging normal results as errors so we just use normal log
   });
 
   mongodump.on('exit', function (code) {
@@ -174,7 +192,7 @@ function compressDirectory(directory, input, output, callback) {
  * @param callback  callback(err)
  */
 function sendToS3(options, directory, target, callback) {
-  var knox = require('knox')
+  var knox = require('knox-s3')
     , sourceFile = path.join(directory, target)
     , s3client
     , destination = options.destination || '/'
@@ -226,7 +244,7 @@ function sendToS3(options, directory, target, callback) {
  * @param callback        callback(err)
  */
 function sync(mongodbConfig, s3Config, callback) {
-  var tmpDir = path.join(require('os').tmpDir(), 'mongodb_s3_backup')
+  var tmpDir = path.join(require('os').tmpdir(), 'mongodb_s3_backup')
     , backupDir = path.join(tmpDir, mongodbConfig.db)
     , archiveName = getArchiveName(mongodbConfig.db)
     , async = require('async')
@@ -257,7 +275,7 @@ function sync(mongodbConfig, s3Config, callback) {
 
   // this cleans up folders in case of EPIPE error from AWS connection
   d.on('error', function(err) {
-      d.exit()
+      d.exit();
       async.series(tmpDirCleanupFns, function() {
         throw(err);
       });

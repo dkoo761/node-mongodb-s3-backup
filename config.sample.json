@@ -1,5 +1,6 @@
 {
   "mongodb": {
+    "type": "standalone",
     "host": "localhost",
     "port": 27017,
     "username": false,
